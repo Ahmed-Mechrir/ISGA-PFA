@@ -1,0 +1,116 @@
+<header class="app-header">
+  <div class="header-container">
+    <!-- Brand -->
+    <div class="header-brand">
+      <a href="#" class="brand-link">
+        <div class="brand-icon">🏨</div>
+        <div class="brand-text">TravelPlan</div>
+      </a>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="header-nav">
+      <div class="nav-links">
+        <a href="#" class="nav-link">
+          <span class="icon">🏠</span>
+          Home
+        </a>
+        <a href="#" class="nav-link">
+          <span class="icon">🔍</span>
+          Search
+        </a>
+        <a href="#" class="nav-link">
+          <span class="icon">⚙️</span>
+          Manage
+        </a>
+      </div>
+    </nav>
+
+    <!-- Profile dropdown -->
+    <div class="relative user-dropdown" *ngIf="currentUser$ | async as user">
+      <button
+        type="button"
+        class="relative flex items-center gap-3 rounded-full bg-white px-3 py-2 border border-gray-200 hover:border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200"
+        (click)="toggleDropdown()"
+        [class.ring-2]="showDropdown"
+        [class.ring-blue-500]="showDropdown">
+
+        <!-- Avatar -->
+        <div class="relative">
+          <div class="size-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+            {{ getInitials(user) }}
+          </div>
+          <div class="absolute -bottom-0 -right-0 size-3 rounded-full border-2 border-white"
+               [class.bg-green-500]="user.role === 'client'"
+               [class.bg-blue-500]="user.role === 'agence'"></div>
+        </div>
+
+        <!-- User Info -->
+        <div class="text-left min-w-0 flex-1">
+          <div class="text-sm font-medium text-gray-900 truncate">{{ user.prenom }} {{ user.nom }}</div>
+          <div class="text-xs text-gray-500 truncate">{{ getRoleDisplayName(user.role) }}</div>
+        </div>
+
+        <!-- Dropdown Icon -->
+        <svg class="size-4 text-gray-400 transition-transform duration-200"
+             [class.rotate-180]="showDropdown"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      <!-- Dropdown Menu -->
+      <div *ngIf="showDropdown"
+           class="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none dropdown-menu">
+
+        <!-- User Profile Header -->
+        <div class="px-4 py-3 border-b border-gray-100">
+          <div class="flex items-center gap-3">
+            <div class="size-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+              {{ getInitials(user) }}
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-medium text-gray-900 truncate">{{ user.prenom }} {{ user.nom }}</div>
+              <div class="text-sm text-gray-500 truncate">{{ user.email }}</div>
+              <div class="text-xs text-gray-400">{{ getRoleDisplayName(user.role) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Menu Items -->
+        <div class="py-1">
+          <a routerLink="/reservations"
+             class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
+             (click)="closeDropdown()">
+            <svg class="mr-3 size-4 text-gray-400 group-hover:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+            List of Reservations
+          </a>
+
+          <a href="#"
+             class="group flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors duration-150"
+             (click)="closeDropdown()">
+            <svg class="mr-3 size-4 text-gray-400 group-hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+            List of Favorites
+          </a>
+        </div>
+
+        <div class="border-t border-gray-100">
+          <button type="button"
+                  class="group flex w-full items-center px-4 py-2 text-sm text-red-700 hover:bg-red-50 hover:text-red-900 transition-colors duration-150"
+                  (click)="logout()">
+            <svg class="mr-3 size-4 text-red-400 group-hover:text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Sign out
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>

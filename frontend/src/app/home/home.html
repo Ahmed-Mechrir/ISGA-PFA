@@ -1,0 +1,219 @@
+<div class="home-container">
+  <!-- Header Component -->
+  <app-header></app-header>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <!-- Hero Section with Search -->
+    <section class="hero-section">
+      <div class="hero-content">
+        <!-- Client View -->
+        <ng-container *ngIf="!isAgency()">
+          <h1 class="hero-title">Find Your Perfect Stay</h1>
+          <p class="hero-subtitle">Discover amazing places to stay around the world</p>
+        </ng-container>
+
+        <!-- Agency View -->
+        <ng-container *ngIf="isAgency()">
+          <h1 class="hero-title">Manage Your Accommodations</h1>
+          <p class="hero-subtitle">Create and manage your property listings</p>
+        </ng-container>
+
+        <!-- Search Bar (Only for Clients) -->
+        <div class="search-section" *ngIf="!isAgency()">
+          <div class="search-bar">
+            <div class="search-field">
+              <label for="location">
+                <lucide-icon [img]="Search" size="16"></lucide-icon>
+                Location
+              </label>
+              <input
+                id="location"
+                type="text"
+                [value]="searchQuery()"
+                (input)="onSearch($event)"
+                placeholder="Where are you going?">
+            </div>
+
+            <div class="search-field">
+              <label for="type">Type</label>
+              <select id="type" [value]="selectedType()" (change)="onTypeChange($event)">
+                <option value="">Any Type</option>
+                <option *ngFor="let type of filterOptions()?.types" [value]="type">
+                  {{ getTypeDisplayName(type) }}
+                </option>
+              </select>
+            </div>
+
+            <div class="search-field">
+              <label for="capacity">Guests</label>
+              <select id="capacity" [value]="selectedCapacity()" (change)="onCapacityChange($event)">
+                <option value="">Any</option>
+                <option value="1">1 Guest</option>
+                <option value="2">2 Guests</option>
+                <option value="3">3 Guests</option>
+                <option value="4">4+ Guests</option>
+              </select>
+            </div>
+
+            <button class="filter-toggle" (click)="toggleFilters()" [class.active]="showFilters()">
+              <lucide-icon [img]="Filter" size="16"></lucide-icon>
+              Filters
+            </button>
+          </div>
+
+          <!-- Advanced Filters -->
+          <div class="filters-panel" *ngIf="showFilters()">
+            <div class="filter-row">
+              <div class="filter-group">
+                <label>Price Range (MAD)</label>
+                <div class="price-inputs">
+                  <input
+                    type="number"
+                    [value]="priceRange().min"
+                    (input)="onMinPriceChange($event)"
+                    placeholder="Min">
+                  <span>to</span>
+                  <input
+                    type="number"
+                    [value]="priceRange().max"
+                    (input)="onMaxPriceChange($event)"
+                    placeholder="Max">
+                </div>
+              </div>
+              <div class="filter-actions">
+                <button class="btn-secondary" (click)="clearFilters()">Clear All</button>
+                <button class="btn-primary" (click)="applyFilters()">Apply Filters</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Section -->
+    <section class="results-section">
+      <div class="results-header">
+        <div class="results-info">
+          <!-- Client View -->
+          <ng-container *ngIf="!isAgency()">
+            <h2>Accommodations</h2>
+            <p *ngIf="totalItems() > 0">We found {{ totalItems() }} places to stay</p>
+          </ng-container>
+
+          <!-- Agency View -->
+          <ng-container *ngIf="isAgency()">
+            <h2>My Accommodations</h2>
+            <p *ngIf="totalItems() > 0">You have {{ totalItems() }} properties listed</p>
+            <p *ngIf="totalItems() === 0">You haven't created any accommodations yet</p>
+          </ng-container>
+        </div>
+
+        <!-- Agency Actions -->
+        <div class="agency-actions" *ngIf="isAgency()">
+          <button class="btn-primary create-btn" (click)="openCreateForm()">
+            <lucide-icon [img]="Plus" size="16"></lucide-icon>
+            Add New Property
+          </button>
+        </div>
+
+        <!-- Sort Options (Only for Clients) -->
+        <div class="sort-options" *ngIf="!isAgency()">
+          <select (change)="onSortChange($event)">
+            <option value="created_at">Most Recent</option>
+            <option value="tarif_amount">Price: Low to High</option>
+            <option value="capacite">Capacity</option>
+            <option value="titre">Name</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div class="loading-container" *ngIf="isLoading()">
+        <div class="loading-spinner"></div>
+        <p *ngIf="!isAgency()">Finding amazing places for you...</p>
+        <p *ngIf="isAgency()">Loading your accommodations...</p>
+      </div>
+
+      <!-- No Results -->
+      <div class="no-results" *ngIf="!isLoading() && accommodations().length === 0">
+        <div class="no-results-icon">🏠</div>
+
+        <!-- Client No Results -->
+        <ng-container *ngIf="!isAgency()">
+          <h3>No accommodations found</h3>
+          <p>Try adjusting your search criteria or clear filters</p>
+          <button class="btn-primary" (click)="clearFilters()">Clear Filters</button>
+        </ng-container>
+
+        <!-- Agency No Results -->
+        <ng-container *ngIf="isAgency()">
+          <h3>No properties yet</h3>
+          <p>Start by creating your first accommodation listing</p>
+          <button class="btn-primary" (click)="openCreateForm()">
+            <lucide-icon [img]="Plus" size="16"></lucide-icon>
+            Create Your First Property
+          </button>
+        </ng-container>
+      </div>
+
+
+      <!-- Accommodation Grid -->
+      <div class="accommodation-grid" *ngIf="!isLoading() && accommodations().length > 0">
+        <app-accommodation-card
+          *ngFor="let accommodation of accommodations(); trackBy: trackByAccommodation"
+          [accommodation]="accommodation"
+          [showActions]="true"
+          [compactMode]="false"
+          [isAgencyView]="isAgency()"
+          (favorite)="onFavoriteAccommodation($event)"
+          (viewDetails)="onViewAccommodationDetails($event)"
+          (bookNow)="onBookAccommodation($event)"
+          (edit)="onEditAccommodation($event)"
+          (delete)="onDeleteAccommodation($event)">
+        </app-accommodation-card>
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination" *ngIf="totalPages() > 1">
+        <button
+          class="page-btn"
+          [disabled]="currentPage() === 1"
+          (click)="onPreviousPage()">
+          Previous
+        </button>
+
+        <div class="page-numbers">
+          <span class="page-info">
+            Page {{ currentPage() }} of {{ totalPages() }}
+          </span>
+        </div>
+
+        <button
+          class="page-btn"
+          [disabled]="currentPage() === totalPages()"
+          (click)="onNextPage()">
+          Next
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Accommodation Details Dialog -->
+  <app-accommodation-details-dialog
+    *ngIf="selectedAccommodation() && showDetailsDialog()"
+    [accommodation]="selectedAccommodation()!"
+    [isOpen]="showDetailsDialog()"
+    (closeDialog)="onCloseDetailsDialog()"
+    (bookNow)="onBookFromDialog($event)">
+  </app-accommodation-details-dialog>
+
+  <!-- Booking Dialog -->
+  <app-booking-dialog
+    *ngIf="selectedAccommodation() && showBookingDialog()"
+    [accommodation]="selectedAccommodation()!"
+    [isOpen]="showBookingDialog()"
+    (closeDialog)="onCloseBookingDialog()"
+    (bookingCompleted)="onBookingCompleted($event)">
+  </app-booking-dialog>
+</div>
