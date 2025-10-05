@@ -1,106 +1,121 @@
 <div class="auth-container">
-  <div class="tabs">
-    <button type="button" class="tab" [class.active]="activeTab() === 'signin'" (click)="switchTab('signin')">
-      Sign In
-    </button>
-    <button type="button" class="tab" [class.active]="activeTab() === 'signup'" (click)="switchTab('signup')">
-      Sign Up
-    </button>
-  </div>
-
-  <div class="tab-content">
-    <!-- Success/Error Messages -->
-    <div class="message success" *ngIf="successMessage()">
-      {{ successMessage() }}
-    </div>
-    <div class="message error" *ngIf="errorMessage()">
-      {{ errorMessage() }}
+  <div class="auth-split">
+    <div class="auth-left" aria-hidden="true">
+      <div class="art-overlay"></div>
+      <div class="art-pattern"></div>
+      <div class="art-caption">
+        <h3>Welcome back!</h3>
+        <p>You can sign in to access with your existing account.</p>
+      </div>
     </div>
 
-    <form *ngIf="activeTab() === 'signin'" [formGroup]="signInForm" (ngSubmit)="submitSignIn()" novalidate>
-      <div class="field">
-        <label for="email">Email</label>
-        <input id="email" type="email" formControlName="email" placeholder="you@example.com" />
-        <div class="error" *ngIf="signInForm.get('email')?.touched && signInForm.get('email')?.invalid">
-          Please enter a valid email.
-        </div>
+    <div class="auth-right">
+      <div class="form-wrapper">
+        <div class="tabs">
+        <button type="button" class="tab" [class.active]="activeTab() === 'signin'" (click)="switchTab('signin')">
+          Sign In
+        </button>
+        <button type="button" class="tab" [class.active]="activeTab() === 'signup'" (click)="switchTab('signup')">
+          Sign Up
+        </button>
       </div>
 
-      <div class="field">
-        <label for="password">Password</label>
-        <input id="password" type="password" formControlName="password" placeholder="••••••••" />
-        <div class="error" *ngIf="signInForm.get('password')?.touched && signInForm.get('password')?.invalid">
-          Password is required (min 6 characters).
+      <div class="tab-content">
+        <!-- Success/Error Messages -->
+        <div class="message success" *ngIf="successMessage()">
+          {{ successMessage() }}
         </div>
+        <div class="message error" *ngIf="errorMessage()">
+          {{ errorMessage() }}
+        </div>
+
+        <form *ngIf="activeTab() === 'signin'" [formGroup]="signInForm" (ngSubmit)="submitSignIn()" novalidate>
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email" type="email" formControlName="email" placeholder="you@example.com" />
+            <div class="error" *ngIf="signInForm.get('email')?.touched && signInForm.get('email')?.invalid">
+              Please enter a valid email.
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" type="password" formControlName="password" placeholder="••••••••" />
+            <div class="error" *ngIf="signInForm.get('password')?.touched && signInForm.get('password')?.invalid">
+              Password is required (min 6 characters).
+            </div>
+          </div>
+
+          <button class="primary" type="submit" [disabled]="(isLoading$ | async) || signInForm.invalid">
+            <span *ngIf="isLoading$ | async">Signing in...</span>
+            <span *ngIf="!(isLoading$ | async)">Sign In</span>
+          </button>
+        </form>
+
+        <form *ngIf="activeTab() === 'signup'" [formGroup]="signUpForm" (ngSubmit)="submitSignUp()" novalidate>
+          <div class="field">
+            <label for="nom">Last Name</label>
+            <input id="nom" type="text" formControlName="nom" placeholder="Doe" />
+            <div class="error" *ngIf="signUpForm.get('nom')?.touched && signUpForm.get('nom')?.invalid">
+              Last name is required (min 2 characters).
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="prenom">First Name</label>
+            <input id="prenom" type="text" formControlName="prenom" placeholder="Jane" />
+            <div class="error" *ngIf="signUpForm.get('prenom')?.touched && signUpForm.get('prenom')?.invalid">
+              First name is required (min 2 characters).
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="email2">Email</label>
+            <input id="email2" type="email" formControlName="email" placeholder="you@example.com" />
+            <div class="error" *ngIf="signUpForm.get('email')?.touched && signUpForm.get('email')?.invalid">
+              Please enter a valid email.
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="password2">Password</label>
+            <input id="password2" type="password" formControlName="mot_de_passe" placeholder="••••••••" />
+            <div class="error" *ngIf="signUpForm.get('mot_de_passe')?.touched && signUpForm.get('mot_de_passe')?.invalid">
+              Password is required (min 6 characters).
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="password_confirmation">Confirm Password</label>
+            <input id="password_confirmation" type="password" formControlName="password_confirmation" placeholder="••••••••" />
+            <div class="error" *ngIf="signUpForm.get('password_confirmation')?.touched && signUpForm.get('password_confirmation')?.invalid">
+              Confirmation is required (min 6 characters).
+            </div>
+            <div class="error" *ngIf="signUpForm.errors?.['passwordMismatch'] && signUpForm.get('password_confirmation')?.touched">
+              Passwords do not match.
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="role">Account Type</label>
+            <select id="role" formControlName="role">
+              <option value="">Select account type</option>
+              <option value="client">Client</option>
+              <option value="agence">Travel Agency</option>
+            </select>
+            <div class="error" *ngIf="signUpForm.get('role')?.touched && signUpForm.get('role')?.invalid">
+              Please select an account type.
+            </div>
+          </div>
+
+          <button class="primary" type="submit" [disabled]="(isLoading$ | async) || signUpForm.invalid">
+            <span *ngIf="isLoading$ | async">Creating account...</span>
+            <span *ngIf="!(isLoading$ | async)">Create Account</span>
+          </button>
+        </form>
       </div>
-
-      <button class="primary" type="submit" [disabled]="(isLoading$ | async) || signInForm.invalid">
-        <span *ngIf="isLoading$ | async">Signing in...</span>
-        <span *ngIf="!(isLoading$ | async)">Sign In</span>
-      </button>
-    </form>
-
-    <form *ngIf="activeTab() === 'signup'" [formGroup]="signUpForm" (ngSubmit)="submitSignUp()" novalidate>
-      <div class="field">
-        <label for="nom">Last Name</label>
-        <input id="nom" type="text" formControlName="nom" placeholder="Doe" />
-        <div class="error" *ngIf="signUpForm.get('nom')?.touched && signUpForm.get('nom')?.invalid">
-          Last name is required (min 2 characters).
-        </div>
       </div>
-
-      <div class="field">
-        <label for="prenom">First Name</label>
-        <input id="prenom" type="text" formControlName="prenom" placeholder="Jane" />
-        <div class="error" *ngIf="signUpForm.get('prenom')?.touched && signUpForm.get('prenom')?.invalid">
-          First name is required (min 2 characters).
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="email2">Email</label>
-        <input id="email2" type="email" formControlName="email" placeholder="you@example.com" />
-        <div class="error" *ngIf="signUpForm.get('email')?.touched && signUpForm.get('email')?.invalid">
-          Please enter a valid email.
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="password2">Password</label>
-        <input id="password2" type="password" formControlName="mot_de_passe" placeholder="••••••••" />
-        <div class="error" *ngIf="signUpForm.get('mot_de_passe')?.touched && signUpForm.get('mot_de_passe')?.invalid">
-          Password is required (min 6 characters).
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="password_confirmation">Confirm Password</label>
-        <input id="password_confirmation" type="password" formControlName="password_confirmation" placeholder="••••••••" />
-        <div class="error" *ngIf="signUpForm.get('password_confirmation')?.touched && signUpForm.get('password_confirmation')?.invalid">
-          Confirmation is required (min 6 characters).
-        </div>
-        <div class="error" *ngIf="signUpForm.errors?.['passwordMismatch'] && signUpForm.get('password_confirmation')?.touched">
-          Passwords do not match.
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="role">Account Type</label>
-        <select id="role" formControlName="role">
-          <option value="">Select account type</option>
-          <option value="client">Client</option>
-          <option value="agence">Travel Agency</option>
-        </select>
-        <div class="error" *ngIf="signUpForm.get('role')?.touched && signUpForm.get('role')?.invalid">
-          Please select an account type.
-        </div>
-      </div>
-
-      <button class="primary" type="submit" [disabled]="(isLoading$ | async) || signUpForm.invalid">
-        <span *ngIf="isLoading$ | async">Creating account...</span>
-        <span *ngIf="!(isLoading$ | async)">Create Account</span>
-      </button>
-    </form>
+    </div>
   </div>
 </div>
 

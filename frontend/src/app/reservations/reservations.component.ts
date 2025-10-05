@@ -6,8 +6,12 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { LucideAngularModule, Calendar, MapPin, Users, DollarSign, Clock, CheckCircle, XCircle, AlertCircle, ArrowLeft, Filter, Search, Eye, X, Building, Home, Bed, ChevronLeft, ChevronRight } from 'lucide-angular';
 import { AuthService } from '../auth/auth';
 import { BookingService, ReservationResponse } from '../booking/booking';
-import { AccommodationService } from '../accommodation/accommodation';
+import { AccommodationService, Accommodation } from '../accommodation/accommodation';
 import { HeaderComponent } from '../header/header';
+import { AccommodationCardComponent } from '../shared/accommodation-card/accommodation-card.component';
+import { ReservationCardComponent } from '../shared/reservation-card/reservation-card.component';
+import { ReviewDialogComponent } from '../shared/dialogs/review/review-dialog.component';
+import { ReviewService } from '../reviews/review';
 
 @Component({
   selector: 'app-reservations',
@@ -18,7 +22,10 @@ import { HeaderComponent } from '../header/header';
     FormsModule,
     ReactiveFormsModule,
     LucideAngularModule,
-    HeaderComponent
+    HeaderComponent,
+    AccommodationCardComponent,
+    ReservationCardComponent,
+    ReviewDialogComponent
   ],
   template: `
     <div class="home-container">
@@ -88,6 +95,20 @@ import { HeaderComponent } from '../header/header';
                     placeholder="Search reservations...">
                 </div>
 
+                <div class="search-field">
+                  <label for="dayFilter">Day Filter</label>
+                  <select id="dayFilter" [(ngModel)]="selectedDay" (change)="applyFilters()">
+                    <option value="">All Days</option>
+                    <option value="monday">Monday</option>
+                    <option value="tuesday">Tuesday</option>
+                    <option value="wednesday">Wednesday</option>
+                    <option value="thursday">Thursday</option>
+                    <option value="friday">Friday</option>
+                    <option value="saturday">Saturday</option>
+                    <option value="sunday">Sunday</option>
+                  </select>
+                </div>
+
                 <button
                   class="filter-toggle"
                   [class.active]="statusFilter === ''"
@@ -151,119 +172,12 @@ import { HeaderComponent } from '../header/header';
 
           <!-- Reservations Grid -->
           <div class="accommodation-grid" *ngIf="!isLoading() && filteredReservations().length > 0">
-            <div
+            <app-reservation-card
               *ngFor="let reservation of filteredReservations(); trackBy: trackByReservation"
-              class="reservation-card"
-              [class.pending]="reservation.statut === 'en_attente'"
-              [class.confirmed]="reservation.statut === 'confirme'"
-              [class.cancelled]="reservation.statut === 'annule'">
-
-              <!-- Card Header -->
-              <div class="card-header">
-                <div class="status-badge" [class]="'status-' + reservation.statut">
-                  <lucide-icon
-                    [name]="getStatusIcon(reservation.statut)"
-                    size="14">
-                  </lucide-icon>
-                  {{ getStatusText(reservation.statut) }}
-                </div>
-                <div class="reservation-id">
-                  <span class="id-label">Reservation</span>
-                  <span class="id-value">#{{ reservation.id_reservation }}</span>
-                </div>
-              </div>
-
-              <!-- Accommodation Info -->
-              <div class="accommodation-info">
-                <div class="accommodation-image">
-                  <img
-                    [src]="getAccommodationImage(reservation.logement)"
-                    [alt]="reservation.logement?.titre || 'Accommodation'"
-                    (error)="onImageError($event)">
-                  <div class="image-overlay">
-                    <div class="type-badge">
-                      <lucide-icon [name]="getAccommodationTypeIcon(reservation.logement?.type)" size="12"></lucide-icon>
-                      {{ getTypeDisplayName(reservation.logement?.type) }}
-                    </div>
-                  </div>
-                </div>
-                <div class="accommodation-details">
-                  <h3 class="accommodation-title">
-                    {{ reservation.logement?.titre || 'Unknown Accommodation' }}
-                  </h3>
-                  <div class="accommodation-agency" *ngIf="reservation.logement?.agence?.nom">
-                    <span class="agency-label">by</span>
-                    <span class="agency-name">{{ reservation.logement?.agence?.nom }}</span>
-                  </div>
-                  <div class="accommodation-location">
-                    <lucide-icon name="mapPin" size="14"></lucide-icon>
-                    {{ reservation.logement?.adresse || 'Address not available' }}
-                  </div>
-                </div>
-              </div>
-
-              <!-- Booking Details -->
-              <div class="booking-details">
-                <div class="booking-dates">
-                  <div class="date-item">
-                    <lucide-icon name="calendar" size="16"></lucide-icon>
-                    <div class="date-content">
-                      <span class="date-label">Check-in</span>
-                      <span class="date-value">{{ formatDate(reservation.date_debut) }}</span>
-                    </div>
-                  </div>
-
-                  <div class="date-divider">
-                    <span class="nights-count">{{ calculateNights(reservation.date_debut, reservation.date_fin) }} night(s)</span>
-                  </div>
-
-                  <div class="date-item">
-                    <lucide-icon name="calendar" size="16"></lucide-icon>
-                    <div class="date-content">
-                      <span class="date-label">Check-out</span>
-                      <span class="date-value">{{ formatDate(reservation.date_fin) }}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="booking-meta">
-                  <div class="meta-item">
-                    <lucide-icon name="users" size="16"></lucide-icon>
-                    <span>{{ reservation.nb_personnes }} guest(s)</span>
-                  </div>
-                  <div class="meta-item">
-                    <lucide-icon name="clock" size="16"></lucide-icon>
-                    <span>Booked {{ formatDate(reservation.created_at) }}</span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Price and Actions -->
-              <div class="card-footer">
-                <div class="price-info">
-                  <span class="price-amount">{{ formatPrice(reservation.montant_total) }}</span>
-                  <span class="price-label">Total</span>
-                </div>
-
-                <div class="card-actions">
-                  <button
-                    *ngIf="reservation.statut === 'en_attente'"
-                    type="button"
-                    class="btn-secondary btn-sm"
-                    (click)="cancelReservation(reservation.id_reservation)">
-                    <lucide-icon name="x" size="14"></lucide-icon>
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-primary btn-sm"
-                    (click)="viewReservationDetails(reservation)">
-                    <lucide-icon name="eye" size="14"></lucide-icon>
-                    Details
-                  </button>
-                </div>
-              </div>
-            </div>
+              [reservation]="reservation"
+              [accommodation]="accommodations().get(reservation.id_logement) ?? null"
+              (addReview)="onOpenReviewDialog($event)">
+            </app-reservation-card>
           </div>
 
           <!-- Pagination -->
@@ -290,6 +204,15 @@ import { HeaderComponent } from '../header/header';
           </div>
         </section>
       </main>
+
+      <!-- Review Dialog -->
+      <app-review-dialog
+        *ngIf="showReviewDialog"
+        [isOpen]="showReviewDialog"
+        [agencyName]="reviewAgencyName"
+        (close)="onCloseReviewDialog()"
+        (submit)="onSubmitReview($event)">
+      </app-review-dialog>
     </div>
   `,
   styles: [`
@@ -466,7 +389,7 @@ import { HeaderComponent } from '../header/header';
 
     .search-bar {
       display: grid;
-      grid-template-columns: 2fr repeat(4, auto);
+      grid-template-columns: 2fr 1fr repeat(4, auto);
       gap: 1rem;
       align-items: end;
 
@@ -490,12 +413,13 @@ import { HeaderComponent } from '../header/header';
         gap: 0.5rem;
       }
 
-      input {
+      input, select {
         padding: 0.75rem 1rem;
         border: 2px solid #e5e7eb;
         border-radius: 8px;
         font-size: 1rem;
         transition: all 0.2s ease;
+        background: white;
 
         &:focus {
           outline: none;
@@ -506,6 +430,10 @@ import { HeaderComponent } from '../header/header';
         &::placeholder {
           color: #9ca3af;
         }
+      }
+
+      select {
+        cursor: pointer;
       }
     }
 
@@ -621,11 +549,11 @@ import { HeaderComponent } from '../header/header';
       }
     }
 
-    // Reservation Cards (adapted for reservation-specific content)
+    // Reservation Cards (using accommodation card component)
     .accommodation-grid {
       display: grid;
       gap: 2rem;
-      grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
 
       @media (max-width: 768px) {
         grid-template-columns: 1fr;
@@ -633,28 +561,47 @@ import { HeaderComponent } from '../header/header';
       }
     }
 
-    .reservation-card {
+    .reservation-wrapper {
       background: white;
       border-radius: 12px;
       box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       transition: all 0.3s ease;
+      position: relative;
 
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
       }
+    }
 
-      &.pending {
-        border-left: 4px solid #f59e0b;
-      }
+    .reservation-status-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      background: #f9fafb;
+      border-bottom: 1px solid #e5e7eb;
+    }
 
-      &.confirmed {
-        border-left: 4px solid #10b981;
-      }
+    .reservation-details {
+      padding: 1.5rem;
+      background: #f9fafb;
+      border-top: 1px solid #e5e7eb;
+    }
 
-      &.cancelled {
-        border-left: 4px solid #ef4444;
+    .reservation-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+
+      @media (max-width: 768px) {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
       }
     }
 
@@ -998,9 +945,11 @@ export class ReservationsComponent implements OnInit {
   // Signals
   reservations = signal<ReservationResponse[]>([]);
   filteredReservations = signal<ReservationResponse[]>([]);
+  accommodations = signal<Map<number, Accommodation>>(new Map());
   isLoading = signal(true);
   searchTerm = '';
   statusFilter = '';
+  selectedDay = ''; // Day filter - all days selected by default
 
   // Pagination
   currentPage = 1;
@@ -1010,13 +959,71 @@ export class ReservationsComponent implements OnInit {
   constructor(
     private authService: AuthService,
     private bookingService: BookingService,
-    private accommodationService: AccommodationService
+    private accommodationService: AccommodationService,
+    private reviewService: ReviewService
   ) {}
 
   ngOnInit(): void {
     this.loadReservations();
   }
 
+  // Review dialog state
+  protected showReviewDialog = false;
+  protected reviewTarget: ReservationResponse | null = null;
+  protected reviewAgencyName: string = '';
+
+  protected onOpenReviewDialog(reservation: ReservationResponse): void {
+    this.reviewTarget = reservation;
+    this.reviewAgencyName = reservation.logement?.agence?.nom || '';
+    this.showReviewDialog = true;
+  }
+
+  protected onCloseReviewDialog(): void {
+    this.showReviewDialog = false;
+    this.reviewTarget = null;
+    this.reviewAgencyName = '';
+  }
+
+  protected onSubmitReview(payload: { rating: number; comment: string }): void {
+    if (!this.reviewTarget) return;
+
+    const trySubmit = (agencyId: number) => {
+      this.reviewService.submitReview({ id_agence: agencyId, note: payload.rating, commentaire: payload.comment })
+        .subscribe({
+          next: () => {
+            // Optionally refresh anything if needed
+            this.onCloseReviewDialog();
+            // Minimal feedback
+            console.log('Review submitted successfully');
+          },
+          error: (err) => {
+            console.error('Review submit failed', err);
+          }
+        });
+    };
+
+    // Prefer agency id from preloaded accommodation
+    const preloaded = this.accommodations().get(this.reviewTarget.id_logement);
+    if (preloaded?.agence?.id) {
+      trySubmit(preloaded.agence.id);
+      return;
+    }
+
+    // Fallback: fetch accommodation to get agency id before submission
+    this.accommodationService.getAccommodation(this.reviewTarget.id_logement).subscribe({
+      next: (resp) => {
+        const agencyId = resp?.data?.agence?.id || 0;
+        if (agencyId) {
+          trySubmit(agencyId);
+        } else {
+          console.error('Agency id not found for accommodation');
+        }
+      },
+      error: (err) => {
+        console.error('Failed to load accommodation for review', err);
+      }
+    });
+  }
   async loadReservations(): Promise<void> {
     this.isLoading.set(true);
 
@@ -1024,6 +1031,10 @@ export class ReservationsComponent implements OnInit {
       const reservations = await this.bookingService.getUserReservations().toPromise();
       console.log('Loaded reservations:', reservations);
       this.reservations.set(reservations || []);
+
+      // Fetch accommodation data for each reservation
+      await this.loadAccommodationData(reservations || []);
+
       this.currentPage = 1;
       this.applyPagination();
     } catch (error) {
@@ -1033,6 +1044,28 @@ export class ReservationsComponent implements OnInit {
     } finally {
       this.isLoading.set(false);
     }
+  }
+
+  private async loadAccommodationData(reservations: ReservationResponse[]): Promise<void> {
+    const accommodationMap = new Map<number, Accommodation>();
+
+    // Get unique accommodation IDs
+    const accommodationIds = [...new Set(reservations.map(r => r.id_logement))];
+
+    // Fetch accommodation data for each unique ID
+    const promises = accommodationIds.map(async (id) => {
+      try {
+        const response = await this.accommodationService.getAccommodation(id).toPromise();
+        if (response?.success && response.data) {
+          accommodationMap.set(id, response.data);
+        }
+      } catch (error) {
+        console.error(`Error loading accommodation ${id}:`, error);
+      }
+    });
+
+    await Promise.all(promises);
+    this.accommodations.set(accommodationMap);
   }
 
 
@@ -1162,6 +1195,15 @@ export class ReservationsComponent implements OnInit {
       filtered = filtered.filter(reservation => reservation.statut === this.statusFilter);
     }
 
+    // Apply day filter
+    if (this.selectedDay) {
+      filtered = filtered.filter(reservation => {
+        const checkInDate = new Date(reservation.date_debut);
+        const dayOfWeek = checkInDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+        return dayOfWeek === this.selectedDay;
+      });
+    }
+
     return filtered;
   }
 
@@ -1169,6 +1211,65 @@ export class ReservationsComponent implements OnInit {
   applyFilters(): void {
     this.currentPage = 1;
     this.applyPagination();
+  }
+
+  // Map reservation to accommodation for the accommodation card component
+  mapReservationToAccommodation(reservation: ReservationResponse): Accommodation {
+    const accommodation = this.accommodations().get(reservation.id_logement);
+
+    if (accommodation) {
+      // Use complete accommodation data if available
+      return accommodation;
+    } else {
+      // Fallback to reservation data if accommodation not loaded yet
+      return {
+        id: reservation.logement?.id_logement || 0,
+        titre: reservation.logement?.titre || 'Unknown Accommodation',
+        description: null,
+        type: (reservation.logement?.type as 'hotel' | 'maison' | 'studio') || 'hotel',
+        capacite: reservation.nb_personnes,
+        adresse: reservation.logement?.adresse || null,
+        photo_url: reservation.logement?.photo_url || null,
+        statut: 'actif' as 'actif' | 'inactif',
+        tarif_amount: reservation.montant_total.toString(),
+        tarif_unit: 'jour' as 'heure' | 'jour' | 'mois',
+        devise: 'MAD',
+        created_at: reservation.created_at,
+        agence: {
+          id: 0,
+          nom: reservation.logement?.agence?.nom || 'Unknown Agency',
+          email: '',
+          score_classement: '0'
+        }
+      };
+    }
+  }
+
+  // Event handlers for accommodation card
+  onFavoriteAccommodation(accommodation: Accommodation): void {
+    console.log('Favorite accommodation:', accommodation);
+    // Implement favorite functionality if needed
+  }
+
+  onViewAccommodationDetails(accommodation: Accommodation): void {
+    console.log('View accommodation details:', accommodation);
+    // Implement view details functionality if needed
+  }
+
+  onBookAccommodation(accommodation: Accommodation): void {
+    console.log('Book accommodation:', accommodation);
+    // Implement booking functionality if needed
+  }
+
+  // Check if accommodation data is loaded for a reservation
+  isAccommodationDataLoaded(reservation: ReservationResponse): boolean {
+    return this.accommodations().has(reservation.id_logement);
+  }
+
+  // Review Dialog
+  // Placed at root to avoid clipping
+  public get reviewDialogTemplate(): string {
+    return '';
   }
 }
 

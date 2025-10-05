@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../auth/auth';
 import { HeaderComponent } from '../header/header';
 import { AccommodationService, Accommodation, AccommodationFilters, FilterOptions } from '../accommodation/accommodation';
+import { ConfirmDeleteDialogComponent } from '../shared/dialogs/confirm-delete/confirm-delete-dialog.component';
+import { EditAccommodationDialogComponent } from '../shared/dialogs/edit-accommodation/edit-accommodation-dialog.component';
 import { AccommodationCardComponent } from '../shared/accommodation-card/accommodation-card.component';
 import { AccommodationDetailsDialogComponent } from '../shared/dialogs/accommodation-details/accommodation-details-dialog.component';
 import { BookingDialogComponent } from '../shared/dialogs/booking/booking-dialog.component';
@@ -17,7 +19,7 @@ import {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent, AccommodationCardComponent, AccommodationDetailsDialogComponent, BookingDialogComponent, LucideAngularModule],
+  imports: [CommonModule, FormsModule, HeaderComponent, AccommodationCardComponent, AccommodationDetailsDialogComponent, BookingDialogComponent, LucideAngularModule, ConfirmDeleteDialogComponent, EditAccommodationDialogComponent],
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
@@ -58,6 +60,8 @@ export class HomeComponent implements OnInit {
   protected showDetailsDialog = signal(false);
   protected showBookingDialog = signal(false);
   protected selectedAccommodation = signal<Accommodation | null>(null);
+  protected showEditDialog = false;
+  protected showDeleteDialog = false;
 
   ngOnInit() {
     // Load user data and accommodations
@@ -293,21 +297,56 @@ export class HomeComponent implements OnInit {
   }
 
   protected openCreateForm(): void {
-    console.log('Opening create accommodation form');
-    // TODO: Implement create form modal or navigate to create page
+    this.selectedAccommodation.set(null);
+    this.showEditDialog = true;
   }
 
   protected onEditAccommodation(accommodation: Accommodation): void {
-    console.log('Edit clicked:', accommodation.titre);
-    // TODO: Implement edit functionality
+    this.selectedAccommodation.set(accommodation);
+    this.showEditDialog = true;
   }
 
   protected onDeleteAccommodation(accommodation: Accommodation): void {
-    console.log('Delete clicked:', accommodation.titre);
-    if (confirm(`Are you sure you want to delete "${accommodation.titre}"?`)) {
-      // TODO: Implement delete functionality
-      console.log('Accommodation deleted');
+    this.selectedAccommodation.set(accommodation);
+    this.showDeleteDialog = true;
+  }
+
+  protected onSaveAccommodation(payload: Partial<Accommodation>): void {
+    const current = this.selectedAccommodation();
+    const done = () => {
+      this.showEditDialog = false;
+      this.selectedAccommodation.set(null);
+      this.updateLoadAccommodationsForAgency();
+    };
+
+    if (current) {
+      this.accommodationService.updateAccommodation(current.id, payload).subscribe({
+        next: (resp) => { if (resp?.success && resp.data) done(); },
+        error: (err) => console.error('Failed to update accommodation', err)
+      });
+    } else {
+      this.accommodationService.createAccommodation(payload).subscribe({
+        next: (resp) => { if (resp?.success && resp.data) done(); },
+        error: (err) => console.error('Failed to create accommodation', err)
+      });
     }
+  }
+
+  protected onConfirmDelete(): void {
+    const current = this.selectedAccommodation();
+    if (!current) return;
+    this.accommodationService.deleteAccommodation(current.id).subscribe({
+      next: (resp) => {
+        if (resp?.success) {
+          this.showDeleteDialog = false;
+          this.selectedAccommodation.set(null);
+          this.updateLoadAccommodationsForAgency();
+        }
+      },
+      error: (err) => {
+        console.error('Failed to delete accommodation', err);
+      }
+    });
   }
 
   // Update loadAccommodations to filter by agency if user is agency

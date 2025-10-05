@@ -95,4 +95,19 @@ export class AccommodationService {
   getFilterOptions(): Observable<FilterOptions> {
     return this.http.get<FilterOptions>(`${this.apiUrl}/logements/filters/options`);
   }
+
+  // Update an accommodation (agency only)
+  updateAccommodation(id: number, payload: Partial<Accommodation>): Observable<{success: boolean, data: Accommodation, message?: string}> {
+    return this.http.put<{success: boolean, data: Accommodation, message?: string}>(`${this.apiUrl}/logements/${id}`, payload);
+  }
+
+  // Delete an accommodation (agency only)
+  deleteAccommodation(id: number): Observable<{success: boolean, message?: string}> {
+    return this.http.delete<{success: boolean, message?: string}>(`${this.apiUrl}/logements/${id}`);
+  }
+
+  // Create an accommodation (agency only)
+  createAccommodation(payload: Partial<Accommodation>): Observable<{success: boolean, data: Accommodation, message?: string}> {
+    return this.http.post<{success: boolean, data: Accommodation, message?: string}>(`${this.apiUrl}/logements`, payload);
+  }
 }
